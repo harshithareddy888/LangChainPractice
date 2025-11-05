@@ -3,11 +3,13 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnableMap, RunnableLambda
 #agent imports
+from langchain_openai import ChatOpenAI
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain import hub
-from langchain.agents.react.agent import create_react_agent 
+import langchain.agents as agents
+
 # from langchain_core.chains import LLMChain
 
 from dotenv import load_dotenv
@@ -52,28 +54,26 @@ def generate_pet_name(animal_type, pet_color): #whenever ypu add a parameter, yo
 
 #newer version code  (langchain 0.1.0+ version)
 def langchain_agent():
+    # Initialize the LLM
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.5)
 
-    # Define tool
+    # Define tools
     wikipedia = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
     tools = [wikipedia]
 
-    # Pull the ReAct prompt from LangChain Hub
+    # Load standard ReAct prompt from LangChain Hub
     prompt = hub.pull("hwchase17/react")
 
-    # Create the ReAct-style agent
-    agent = create_react_agent(llm, tools, prompt)
+    # Create agent and executor (using the safer import)
+    agent = agents.create_react_agent(llm, tools, prompt)
+    executor = agents.AgentExecutor(agent=agent, tools=tools, verbose=True)
 
-    # Create executor to manage agent + tools
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-
-    # Run query
-    result = agent_executor.invoke({
+    # Run the agent
+    result = executor.invoke({
         "input": "Who is the president of the United States? What is his current age raised to the power of 0.23?"
     })
 
     return result
-
 
 if __name__ == "__main__":
     # print(generate_pet_name("dog", "brown"))
